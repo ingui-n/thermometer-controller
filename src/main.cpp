@@ -6,10 +6,10 @@
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
-IPAddress localIP(192, 168, 0, 2); // change to your local IP
-IPAddress gateway(192, 168, 0, 1); // change to your gateway
-IPAddress subnet(255, 255, 255, 0); // change to your subnet
-IPAddress primaryDNS(192, 168, 0, 1); // change to your primary DNS
+IPAddress localIP(10, 0, 1, 26); // change to your local IP
+IPAddress gateway(10, 0, 0, 1); // change to your gateway
+IPAddress subnet(255, 255, 0, 0); // change to your subnet
+IPAddress primaryDNS(10, 0, 0, 1); // change to your primary DNS
 IPAddress secondaryDNS(1, 1, 1, 1); // change to your secondary DNS
 
 JsonDocument messageDoc;
