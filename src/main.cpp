@@ -14,6 +14,50 @@ IPAddress secondaryDNS(1, 1, 1, 1); // change to your secondary DNS
 
 JsonDocument messageDoc;
 const JsonArray messagesArray = messageDoc.to<JsonArray>();
+String token;
+
+bool setDatabaseToken() {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("WiFi not connected");
+        return false;
+    }
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient https;
+
+    https.begin(client, String(POCKETBASE_URL) + "/api/collections/users/auth-with-password");
+    https.addHeader("Content-Type", "application/json");
+
+    const String postData = R"({"identity": ")" + String(POCKETBASE_EMAIL) + R"(", "password": ")" + String(
+                                POCKETBASE_PASSWORD) + "\"}";
+
+    https.setTimeout(10000);
+
+    const int httpCode = https.POST(postData);
+
+    if (httpCode > 0) {
+        String payload = https.getString();
+
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, payload);
+
+        if (error) {
+            Serial.print(F("deserializeJson() failed: "));
+            Serial.println(error.f_str());
+        } else {
+            token = doc["token"].as<const char *>();
+            https.end();
+
+            return true;
+        }
+    }
+
+    Serial.printf(https.errorToString(httpCode).c_str());
+    https.end();
+
+    return false;
+}
 
 void saveTemperature(const String &device = "", const double temperature = 0.0) {
     if (WiFi.status() != WL_CONNECTED) {
@@ -27,7 +71,7 @@ void saveTemperature(const String &device = "", const double temperature = 0.0) 
 
     http.begin(client, String(POCKETBASE_URL) + String(POCKETBASE_TEMPERATURE_ENDPOINT));
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", "Bearer " + String(POCKETBASE_BEARER));
+    http.addHeader("Authorization", "Bearer " + token);
 
     const String postData = "{\"temperature\": " + String(temperature, 2) + R"(, "device": ")" + device
                             + "\"}";
@@ -104,5 +148,14 @@ void setup() {
 }
 
 void loop() {
+    if (token.length() == 0) {
+        while (!setDatabaseToken()) {
+            Serial.println("Waiting for token to be set...");
+            delay(1000);
+        }
+
+        Serial.println("DB token set");
+    }
+
     processNewMessages();
 }
