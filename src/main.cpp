@@ -15,6 +15,7 @@ IPAddress secondaryDNS(1, 1, 1, 1); // change to your secondary DNS
 JsonDocument messageDoc;
 const JsonArray messagesArray = messageDoc.to<JsonArray>();
 String token;
+unsigned long lastRestartTime = 0;
 
 bool setDatabaseToken() {
     if (WiFi.status() != WL_CONNECTED) {
@@ -145,6 +146,7 @@ void setup() {
 
     esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
     esp_now_register_recv_cb(onDataReceive);
+    lastRestartTime = millis() + REBOOT_TIMER;
 }
 
 void loop() {
@@ -158,4 +160,8 @@ void loop() {
     }
 
     processNewMessages();
+
+    if (millis() >= lastRestartTime) {
+        ESP.restart();
+    }
 }
